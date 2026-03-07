@@ -11,7 +11,7 @@ export default function LeaveScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  
+
   // Form state
   const [leaveType, setLeaveType] = useState('annual');
   const [startDate, setStartDate] = useState('');
@@ -31,7 +31,7 @@ export default function LeaveScreen() {
         getLeaveBalance(user.user_id),
         getLeaveHistory(user.user_id)
       ]);
-      
+
       if (balanceRes.success) setBalance(balanceRes.data);
       if (historyRes.success) setHistory(historyRes.data);
     } catch (err) {
@@ -42,12 +42,31 @@ export default function LeaveScreen() {
     }
   };
 
+  const validateDate = (dateString) => {
+    const regEx = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateString.match(regEx)) return false;
+    const d = new Date(dateString);
+    const dNum = d.getTime();
+    if (!dNum && dNum !== 0) return false;
+    return d.toISOString().slice(0, 10) === dateString;
+  };
+
   const handleApplyLeave = async () => {
     setError('');
     setSuccess('');
 
     if (!startDate || !endDate || !reason) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    if (!validateDate(startDate) || !validateDate(endDate)) {
+      setError('Please use YYYY-MM-DD format');
+      return;
+    }
+
+    if (new Date(startDate) > new Date(endDate)) {
+      setError('Start date cannot be after end date');
       return;
     }
 
@@ -66,6 +85,7 @@ export default function LeaveScreen() {
         setEndDate('');
         setReason('');
         setShowForm(false);
+        setTimeout(() => setSuccess(''), 3000);
         loadData();
       } else {
         setError(response.message || 'Failed to apply leave');
@@ -129,7 +149,7 @@ export default function LeaveScreen() {
         <Card style={styles.card}>
           <Card.Content>
             <Title>Apply for Leave</Title>
-            
+
             <Paragraph style={styles.label}>Leave Type</Paragraph>
             <View style={styles.chipContainer}>
               <Chip selected={leaveType === 'annual'} onPress={() => setLeaveType('annual')} style={styles.chip}>Annual</Chip>
@@ -272,7 +292,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   statusChip: {
-    height: 24,
+    paddingVertical: 0,
+    marginVertical: 0,
   },
   historyDates: {
     fontSize: 12,

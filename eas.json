@@ -1,0 +1,43 @@
+{
+  "cli": {
+    "version": ">= 8.0.0"
+  },
+  "build": {
+    "production": {
+      "extends": "base",
+      "channel": "production"
+    },
+    "preview": {
+      "extends": "base",
+      "channel": "preview"
+    },
+    "development": {
+      "extends": "base",
+      "channel": "development"
+    },
+    "base": {
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://tnt-bc5-chatbot-api.azurewebsites.net"
+      },
+      "android": {
+        "image": "latest",
+        "buildType": "apk"
+      },
+      "ios": {
+        "image": "latest",
+        "buildType": "ipa"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "track": "internal",
+        "isDefault": false
+      },
+      "ios": {
+        "testFlightTrack": "internal"
+      }
+    }
+  }
+}

@@ -4,6 +4,32 @@ import { Card, Title, Paragraph, Button, TextInput, HelperText, Chip, List } fro
 import { useAuth } from '../contexts/AuthContext';
 import { getRooms, bookRoom, getUserBookings, cancelBooking } from '../services/api';
 
+function normalizeFacilities(room) {
+  const raw = room?.facilities ?? room?.features;
+
+  if (Array.isArray(raw)) {
+    return raw.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof raw === 'string') {
+    // Support comma-separated strings and JSON-ish arrays serialized as strings.
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => String(item).trim()).filter(Boolean);
+        }
+      } catch (_) {
+        // Fall back to simple split below.
+      }
+    }
+    return raw.split(',').map((item) => item.trim()).filter(Boolean);
+  }
+
+  return [];
+}
+
 export default function RoomsScreen() {
   const { user } = useAuth();
   const [rooms, setRooms] = useState([]);
@@ -12,7 +38,7 @@ export default function RoomsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showBookForm, setShowBookForm] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
-  
+
   // Form state
   const [date, setDate] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -32,8 +58,17 @@ export default function RoomsScreen() {
         getRooms(),
         getUserBookings(user.user_id)
       ]);
-      
-      if (roomsRes.success) setRooms(roomsRes.data);
+
+      if (roomsRes.success) {
+        const normalizedRooms = (roomsRes.data || []).map((room) => {
+          const safeRoom = room && typeof room === 'object' ? room : {};
+          return {
+            ...safeRoom,
+            facilities: normalizeFacilities(safeRoom),
+          };
+        });
+        setRooms(normalizedRooms);
+      }
       if (bookingsRes.success) setBookings(bookingsRes.data);
     } catch (err) {
       console.error('Error loading rooms data:', err);
@@ -43,12 +78,22 @@ export default function RoomsScreen() {
     }
   };
 
+  const validateTime = (timeString) => {
+    const regEx = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return regEx.test(timeString);
+  };
+
   const handleBookRoom = async () => {
     setError('');
     setSuccess('');
 
     if (!selectedRoom || !date || !startTime || !endTime || !purpose) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    if (!startTime.includes(':') || !endTime.includes(':')) {
+      setError('Use HH:MM format (e.g., 09:00)');
       return;
     }
 
@@ -70,9 +115,10 @@ export default function RoomsScreen() {
         setPurpose('');
         setShowBookForm(false);
         setSelectedRoom(null);
+        setTimeout(() => setSuccess(''), 3000);
         loadData();
       } else {
-        setError(response.message || 'Failed to book room');
+        setError(response.data?.message || response.message || 'Failed to book room');
       }
     } catch (err) {
       setError('Network error. Please try again.');
@@ -105,7 +151,7 @@ export default function RoomsScreen() {
             <List.Item
               key={index}
               title={room.name}
-              description={`Capacity: ${room.capacity} | ${room.facilities?.join(', ')}`}
+              description={`Capacity: ${room.capacity}${room.facilities.length ? ` | ${room.facilities.join(', ')}` : ''}`}
               left={props => <List.Icon {...props} icon="door" />}
               right={props => (
                 <Button
@@ -130,7 +176,7 @@ export default function RoomsScreen() {
         <Card style={styles.card}>
           <Card.Content>
             <Title>Book {selectedRoom.name}</Title>
-            
+
             <TextInput
               label="Date (YYYY-MM-DD)"
               value={date}
@@ -282,7 +328,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   statusChip: {
-    height: 24,
+    paddingVertical: 0,
+    marginVertical: 0,
   },
   bookingDate: {
     fontSize: 12,
@@ -303,4 +350,3 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
 });
-

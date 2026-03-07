@@ -5,13 +5,20 @@ React Native mobile application for the Employee Management System built with Ex
 ## 📱 Features
 
 ### Phase 1 - Core Modules (Fully Implemented)
+- ✅ **AI Assistant** - Multi-agent chatbot with rich UI for rooms and tickets
 - ✅ **Leave Management** - View balance, apply for leave, check history
 - ✅ **Meeting Room Booking** - Browse rooms, book, manage bookings
 - ✅ **Attendance Tracking** - Clock in/out, view attendance records
 
-### Phase 2 - Standard Modules (Placeholder)
+### 🤖 AI-Driven Features (New!)
+- **Dynamic Intent Routing** - Automatically detects if you want to book a room, take leave, or report a bug.
+- **Rich Data Cards** - Meeting rooms and support tickets are rendered as interactive, horizontally-scrollable cards.
+- **Interactive Suggestions** - Follow-up actions (like "Book Now") appear as one-tap buttons.
+- **Support Ticketing** - Create and check status of hardware/software/network issues via natural language.
+
+### Phase 2 - Standard Modules (Implemented)
+- ✅ **Support Ticketing** - Implemented via the AI Agent (Hardware/Software/Network)
 - 🔧 **Calendar & Events** - Coming soon
-- 🔧 **Support Ticketing** - Coming soon
 
 ### Phase 3 - Enhanced Modules (Placeholder)
 - 🔧 **Visitor Management** - Coming soon
@@ -19,54 +26,17 @@ React Native mobile application for the Employee Management System built with Ex
 - 🔧 **Training Courses** - Coming soon
 - 🔧 **Wellness Programs** - Coming soon
 
+---
+
 ## 🚀 Getting Started
 
-### Prerequisites
-- Node.js (v14 or higher)
-- npm or yarn
-- Expo Go app on your iPhone (download from App Store)
-- FastAPI backend running (from employee-management-app)
+The project is now optimized for **Azure Cloud Integration**.
 
-### Installation
+### [👉 Unified Quick Start Guide](../QUICKSTART.md)
 
-1. **Navigate to the mobile app directory:**
-   ```bash
-   cd employee-management-mobile
-   ```
+Please refer to the root `QUICKSTART.md` for full installation and connection instructions. Localhost backend setup is no longer required for basic testing.
 
-2. **Install dependencies** (already done):
-   ```bash
-   npm install
-   ```
-
-3. **Update API Base URL:**
-   - Open `services/api.js`
-   - Find your computer's IP address:
-     ```powershell
-     ipconfig
-     ```
-   - Update line 6 with your IP:
-     ```javascript
-     const API_BASE_URL = 'http://YOUR_IP_HERE:8001/api';
-     ```
-   - Example: `http://192.168.1.100:8001/api`
-
-4. **Start the backend server:**
-   ```bash
-   cd ../employee-management-app
-   python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
-   ```
-
-5. **Start the Expo development server:**
-   ```bash
-   cd ../employee-management-mobile
-   npm start
-   ```
-
-6. **Open on your iPhone:**
-   - Open **Expo Go** app on your iPhone
-   - Scan the QR code from the terminal
-   - The app will load on your phone!
+---
 
 ## 📱 Testing on iPhone
 
@@ -117,6 +87,9 @@ employee-management-mobile/
 - **Axios** - HTTP client
 - **AsyncStorage** - Local storage
 - **FastAPI** - Backend API (Python)
+- **Azure AI Foundry** - Multi-agent orchestrator
+- **Azure PostgreSQL** - Managed cloud database
+- **React Native Markdown Display** - Premium formatted responses
 
 ## 🔧 Development Commands
 
@@ -142,11 +115,13 @@ npm run web
 
 ## 📝 API Configuration
 
-The app connects to your FastAPI backend. Make sure to:
+The app connects to your FastAPI backend, which is now deployed to **Azure App Service**.
 
-1. **Update the IP address** in `services/api.js`
-2. **Start the backend** with `--host 0.0.0.0` to allow network access
-3. **Allow port 8001** through Windows Firewall
+1.  **Cloud Access**: The app is pre-configured to point to the Azure Production URL in `services/api.js`.
+2.  **Local Development**: To test locally:
+    - Update the IP address in `services/api.js` to your computer's IP.
+    - Start the backend with `--host 0.0.0.0` to allow network access.
+    - Allow port 8001 through Windows Firewall.
 
 ## 🐛 Troubleshooting
 

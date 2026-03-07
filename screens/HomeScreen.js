@@ -1,74 +1,74 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Card, Title, Paragraph, Button, Avatar } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity, Platform } from 'react-native';
+import { Avatar, Card, Title, Paragraph, Button } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { COLORS, SPACING, SHADOWS } from '../constants/Theme';
 
 export default function HomeScreen({ navigation }) {
   const { user, logout } = useAuth();
+  const role = user?.role || 'employee';
 
-  const quickActions = [
-    { title: 'Apply Leave', icon: 'calendar-remove', screen: 'Leave', color: '#667eea' },
-    { title: 'Book Room', icon: 'door', screen: 'Rooms', color: '#764ba2' },
-    { title: 'Clock In/Out', icon: 'clock-outline', screen: 'Attendance', color: '#f093fb' },
-    { title: 'Create Ticket', icon: 'ticket', screen: 'Tickets', color: '#4facfe' },
+  const ALL_QUICK_ACTIONS = [
+    { title: 'Assistant', icon: 'robot', screen: 'Assistant', color: COLORS.primary, roles: ['employee', 'hr_manager', 'facility_manager', 'fitness_instructor', 'shuttle_driver', 'admin'] },
+    { title: 'Apply Leave', icon: 'calendar-remove', screen: 'Leave', color: '#818CF8', roles: ['employee', 'admin'] },
+    { title: 'Book Room', icon: 'door', screen: 'Rooms', color: COLORS.secondary, roles: ['employee', 'admin'] },
+    { title: 'Clock In/Out', icon: 'clock-outline', screen: 'Attendance', color: '#2DD4BF', roles: ['employee', 'admin'] },
+    { title: 'Create Ticket', icon: 'ticket', screen: 'Tickets', color: '#F87171', roles: ['employee', 'admin'] },
+    { title: 'Pending Tickets', icon: 'ticket-confirmation', screen: 'Tickets', color: '#F87171', roles: ['facility_manager', 'admin'] },
+    { title: 'Start Route', icon: 'bus', screen: 'Shuttle', color: '#60A5FA', roles: ['shuttle_driver', 'admin'] },
   ];
 
+  const quickActions = ALL_QUICK_ACTIONS.filter(action => action.roles.includes(role));
+
   return (
-    <ScrollView style={styles.container}>
-      <Card style={styles.welcomeCard}>
-        <Card.Content>
-          <View style={styles.header}>
-            <Avatar.Text size={60} label={user?.name?.substring(0, 2).toUpperCase() || 'EM'} />
-            <View style={styles.headerText}>
-              <Title>Welcome, {user?.name || 'Employee'}!</Title>
-              <Paragraph>{user?.role?.replace('_', ' ').toUpperCase() || 'Employee'}</Paragraph>
-              <Paragraph style={styles.userId}>ID: {user?.user_id || 'N/A'}</Paragraph>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.headerContainer}>
+        <View style={styles.profileSection}>
+          <Avatar.Text
+            size={56}
+            label={user?.name?.substring(0, 2).toUpperCase() || 'EM'}
+            style={styles.avatar}
+            labelStyle={styles.avatarLabel}
+          />
+          <View style={styles.headerText}>
+            <Text style={styles.greeting}>Hello,</Text>
+            <Text style={styles.userName}>{user?.name || 'Employee'}</Text>
+            <View style={styles.badge}>
+              <Text style={styles.roleLabel}>{user?.role?.replace('_', ' ').toUpperCase() || 'Employee'}</Text>
             </View>
           </View>
-        </Card.Content>
-      </Card>
+        </View>
+      </View>
 
-      <Title style={styles.sectionTitle}>Quick Actions</Title>
+      <Title style={styles.sectionTitle}>Main Hub</Title>
       <View style={styles.actionsGrid}>
         {quickActions.map((action, index) => (
-          <Card
+          <TouchableOpacity
             key={index}
-            style={[styles.actionCard, { borderLeftColor: action.color }]}
+            style={[styles.actionCard, SHADOWS.sm]}
             onPress={() => navigation.navigate(action.screen)}
+            activeOpacity={0.7}
           >
-            <Card.Content style={styles.actionContent}>
-              <Avatar.Icon size={48} icon={action.icon} style={{ backgroundColor: action.color }} />
-              <Paragraph style={styles.actionTitle}>{action.title}</Paragraph>
-            </Card.Content>
-          </Card>
+            <View style={[styles.iconContainer, { backgroundColor: action.color + '15' }]}>
+              <MaterialCommunityIcons name={action.icon} size={28} color={action.color} />
+            </View>
+            <Text style={styles.actionTitle}>{action.title}</Text>
+          </TouchableOpacity>
         ))}
       </View>
 
-      <Card style={styles.infoCard}>
-        <Card.Content>
-          <Title>📱 Mobile App Features</Title>
-          <Paragraph style={styles.infoText}>
-            • Leave Management{'\n'}
-            • Meeting Room Booking{'\n'}
-            • Calendar & Events{'\n'}
-            • Support Ticketing{'\n'}
-            • Attendance Tracking{'\n'}
-            • Visitor Registration{'\n'}
-            • Shuttle Booking{'\n'}
-            • Training Courses{'\n'}
-            • Wellness Programs
-          </Paragraph>
-        </Card.Content>
-      </Card>
-
-      <Button
-        mode="outlined"
-        onPress={logout}
-        style={styles.logoutButton}
-        icon="logout"
-      >
-        Logout
-      </Button>
+      <View style={styles.footer}>
+        <Button
+          mode="text"
+          onPress={logout}
+          style={styles.logoutButton}
+          labelStyle={styles.logoutLabel}
+          icon="logout"
+        >
+          Sign Out
+        </Button>
+      </View>
     </ScrollView>
   );
 }
@@ -76,61 +76,104 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
-  welcomeCard: {
-    margin: 16,
-    elevation: 4,
+  content: {
+    paddingBottom: SPACING.xl,
   },
-  header: {
+  headerContainer: {
+    padding: SPACING.lg,
+    paddingTop: SPACING.xl,
+    backgroundColor: COLORS.surface,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    ...SHADOWS.md,
+  },
+  profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  headerText: {
-    marginLeft: 16,
-    flex: 1,
+  avatar: {
+    backgroundColor: COLORS.primary,
   },
-  userId: {
-    fontSize: 12,
-    color: '#666',
+  avatarLabel: {
+    fontWeight: '700',
+    color: COLORS.white,
+  },
+  headerText: {
+    marginLeft: SPACING.md,
+  },
+  greeting: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+  },
+  userName: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginVertical: 2,
+  },
+  badge: {
+    backgroundColor: COLORS.primary + '10',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  roleLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.primary,
+    letterSpacing: 0.5,
   },
   sectionTitle: {
-    marginLeft: 16,
-    marginTop: 8,
-    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginLeft: SPACING.lg,
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.md,
   },
   actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 8,
+    paddingHorizontal: SPACING.md,
   },
   actionCard: {
-    width: '47%',
-    margin: '1.5%',
-    elevation: 2,
-    borderLeftWidth: 4,
-  },
-  actionContent: {
+    width: '45%',
+    margin: '2.5%',
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    padding: SPACING.md,
     alignItems: 'center',
-    paddingVertical: 16,
+    justifyContent: 'center',
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.sm,
   },
   actionTitle: {
-    marginTop: 8,
-    textAlign: 'center',
+    fontSize: 14,
     fontWeight: '600',
+    color: COLORS.text,
+    textAlign: 'center',
   },
-  infoCard: {
-    margin: 16,
-    elevation: 2,
-  },
-  infoText: {
-    marginTop: 8,
-    lineHeight: 24,
+  footer: {
+    marginTop: SPACING.xxl,
+    alignItems: 'center',
   },
   logoutButton: {
-    margin: 16,
-    marginTop: 8,
-    marginBottom: 32,
+    width: '60%',
+  },
+  logoutLabel: {
+    color: COLORS.error,
+    fontWeight: '600',
   },
 });
 

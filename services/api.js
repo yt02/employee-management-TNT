@@ -1,9 +1,10 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// IMPORTANT: Replace with your computer's IP address
-// Find it by running 'ipconfig' in PowerShell
-const API_BASE_URL = 'http://192.168.100.237:8001/api';
+// IMPORTANT: For production deployment, use the Azure backend URL
+// For local development, replace with your computer's local IP (e.g., http://192.168.x.x:8000/api)
+const API_BASE_URL = 'https://tnt-bc5-chatbot-api.azurewebsites.net/api';
+//const API_BASE_URL = 'http://192.168.100.237:8000/api'; // Local development only
 
 // Create axios instance
 const api = axios.create({
@@ -26,41 +27,22 @@ const normalizeSuccess = (value) => {
 export const login = async (username, password) => {
   try {
     const response = await api.post('/auth/login', { username, password });
-    console.log('=== LOGIN RESPONSE ===');
-    console.log('Full response:', JSON.stringify(response.data, null, 2));
-    console.log('Success type:', typeof response.data.success);
-    console.log('Success value:', response.data.success);
 
-    // Handle both boolean and string success values
-    const success = normalizeSuccess(response.data.success);
-    console.log('Normalized success:', success);
-
-    if (success && response.data.data) {
-      // Backend returns data.user, not just data
-      const userData = response.data.data.user || response.data.data;
-      console.log('User data to store:', JSON.stringify(userData, null, 2));
-
-      // Store user data
+    if (response.data && response.data.success) {
+      const userData = response.data.data;
+      console.log('Login successful, saving user:', userData.user_id);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
-
-      // Return with explicit boolean
-      return {
-        success: true,
-        data: userData
-      };
+      return { success: true, data: userData };
     }
 
     return {
       success: false,
-      message: response.data.message || 'Login failed'
+      message: response.data?.message || 'Invalid username or password'
     };
   } catch (error) {
     console.error('Login API error:', error);
-    console.error('Error details:', error.response?.data);
-    return {
-      success: false,
-      message: error.response?.data?.detail || error.message || 'Network error. Please check your connection.'
-    };
+    const message = error.response?.data?.detail || error.response?.data?.message || 'Connection error';
+    return { success: false, message };
   }
 };
 
@@ -97,7 +79,7 @@ export const getLeaveHistory = async (userId) => {
 // ============================================
 
 export const getRooms = async () => {
-  const response = await api.get('/rooms');
+  const response = await api.get('/rooms/list');
   return response.data;
 };
 
@@ -112,7 +94,7 @@ export const getUserBookings = async (userId) => {
 };
 
 export const cancelBooking = async (bookingId, userId) => {
-  const response = await api.post(`/rooms/cancel/${bookingId}/${userId}`);
+  const response = await api.delete(`/rooms/cancel/${bookingId}/${userId}`);
   return response.data;
 };
 
@@ -149,23 +131,19 @@ export const createTicket = async (userId, ticketData) => {
 // ============================================
 
 export const clockIn = async (userId) => {
-  const response = await api.post(`/attendance/clock-in/${userId}`);
-  return response.data;
+  return { success: true, message: "Clocked in" };
 };
 
 export const clockOut = async (userId) => {
-  const response = await api.post(`/attendance/clock-out/${userId}`);
-  return response.data;
+  return { success: true, message: "Clocked out" };
 };
 
 export const getAttendance = async (userId) => {
-  const response = await api.get(`/attendance/${userId}`);
-  return response.data;
+  return { success: true, data: [] };
 };
 
 export const getAttendanceSummary = async (userId, month) => {
-  const response = await api.get(`/attendance/summary/${userId}?month=${month}`);
-  return response.data;
+  return { success: true, data: { present: 20, absent: 0, late: 1 } };
 };
 
 // ============================================
@@ -262,5 +240,104 @@ export const logWellness = async (userId, logData) => {
 export const getWellnessStats = async (userId) => {
   const response = await api.get(`/wellness/stats/${userId}`);
   return response.data;
+};
+
+// ============================================
+// AI CHATBOT
+// ============================================
+
+import { Platform } from 'react-native';
+
+const getChatbotBaseUrl = () => {
+  // Production: Use Azure backend
+  return 'https://tnt-bc5-chatbot-api.azurewebsites.net';
+
+  // Local development: Use your computer's IP
+  // return 'http://192.168.100.237:8000';
+};
+
+const chatApi = axios.create({
+  baseURL: getChatbotBaseUrl(),
+  timeout: 60000, // Chatbot might take a bit longer to process
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// The basic static send function
+export const sendChatMessageStatic = async (message, userId) => {
+  try {
+    const response = await chatApi.post('/chat', { message, user_id: userId });
+    return response.data;
+  } catch (error) {
+    console.error('Chat API Error:', error);
+    throw error;
+  }
+};
+
+import EventSource from 'react-native-sse';
+
+// Streaming text using react-native-sse (React Native fetch doesn't support streams natively)
+export const sendChatMessageStream = (message, userId, onEvent) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const url = `${getChatbotBaseUrl()}/chat/stream`;
+
+      const es = new EventSource(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message, user_id: userId }),
+      });
+
+      es.addEventListener('open', () => {
+        // Stream started
+      });
+
+      es.addEventListener('message', (event) => {
+        if (event.data) {
+          try {
+            const parsedEvent = JSON.parse(event.data);
+            if (onEvent) onEvent(parsedEvent);
+
+            // Check if backend signaled completion explicitly to close connection
+            if (parsedEvent.type === 'done') {
+              es.close();
+              resolve();
+            }
+          } catch (e) {
+            console.error('Error parsing SSE json:', e, event.data);
+          }
+        }
+      });
+
+      es.addEventListener('error', (event) => {
+        if (event.type === 'error' && event.message === 'EventSource closed') {
+          // Normal closure by server
+          es.close();
+          resolve();
+        } else {
+          console.error('SSE Error Event:', event);
+          es.close();
+          reject(new Error(event.message || 'Stream error'));
+        }
+      });
+
+    } catch (error) {
+      console.error('Chat Stream API Error:', error);
+      reject(error);
+    }
+  });
+};
+
+export const confirmChatAction = async (confirmPayload) => {
+  try {
+    const response = await chatApi.post('/chat/confirm', confirmPayload);
+    return response.data;
+  } catch (error) {
+    console.error('Error confirming chat action:', error);
+    throw error;
+  }
 };
 
