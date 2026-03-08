@@ -1,43 +1,54 @@
 {
   "cli": {
-    "version": ">= 8.0.0"
+    "version": ">= 8.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "production": {
       "extends": "base",
-      "channel": "production"
-    },
-    "preview": {
-      "extends": "base",
-      "channel": "preview"
-    },
-    "development": {
-      "extends": "base",
-      "channel": "development"
-    },
-    "base": {
-      "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "https://tnt-bc5-chatbot-api.azurewebsites.net"
-      },
+      "channel": "production",
       "android": {
         "image": "latest",
         "buildType": "apk"
       },
       "ios": {
+        "image": "latest"
+      }
+    },
+    "preview": {
+      "extends": "base",
+      "channel": "preview",
+      "android": {
         "image": "latest",
-        "buildType": "ipa"
+        "buildType": "apk"
+      },
+      "ios": {
+        "image": "latest"
+      }
+    },
+    "development": {
+      "extends": "base",
+      "channel": "development",
+      "android": {
+        "image": "latest",
+        "buildType": "apk"
+      },
+      "ios": {
+        "image": "latest"
+      }
+    },
+    "base": {
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://tnt-bc5-chatbot-api.azurewebsites.net"
       }
     }
   },
   "submit": {
     "production": {
       "android": {
-        "track": "internal",
-        "isDefault": false
+        "track": "internal"
       },
-      "ios": {
-        "testFlightTrack": "internal"
-      }
+      "ios": {}
     }
   }
 }
